@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">\n<meta name="theme-color" content="#111214">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="apple-touch-icon" href="./icons/icon-192.png">
+
+<title>Live Duo</title>
+<style>
+:root{--bg:#111214;--panel:#1a1b1e;--line:#2c2e33;--tx:#ececf0;--mut:#8d909a;--ac:#3b82f6;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;display:flex;height:100dvh;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom)}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
+button{cursor:pointer}
+
+/* sidebar */
+#side{width:270px;flex:none;background:var(--panel);border-right:1px solid var(--line);padding:16px;overflow-y:auto;display:flex;flex-direction:column;gap:18px}
+#side h1{font-size:18px;margin:0}
+#side h2{font-size:15px;margin:0 0 8px}
+.row{display:flex;gap:6px}
+#side input[type=text],#side input[type=password]{flex:1;min-width:0;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+.btn{background:var(--ac);border:0;border-radius:8px;padding:8px 12px;color:#fff}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--tx)}
+.chk{display:flex;gap:8px;align-items:center;color:var(--mut);font-size:14px;margin-top:6px}
+.keybox p,.msg{margin:0 0 8px;color:var(--mut);font-size:13px}
+.msg{min-height:18px;margin:6px 0 0}
+
+/* main */
+#grid{flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:10px}
+.pane{min-width:0;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;overflow:hidden}
+.hd{display:flex;align-items:baseline;gap:14px;padding:8px 12px;border-bottom:1px solid var(--line);white-space:nowrap;overflow:hidden}
+.hd strong{flex:none}
+.hd .st{flex:none;color:var(--mut);font-size:14px}
+.hd .st b{color:var(--tx);font-variant-numeric:tabular-nums}
+.hd .ttl{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--mut);font-style:normal;font-size:13px}
+.vid{flex:none;width:100%;aspect-ratio:16/9;max-height:32%;background:#000}
+.pane.novid .vid{display:none}
+.vid iframe,.chat iframe{width:100%;height:100%;border:0;display:block}
+.chat{flex:1;min-height:0}
+.empty{height:100%;display:grid;place-items:center;text-align:center;color:var(--mut);padding:16px}
+
+/* mobile */
+#menu{display:none}
+#scrim{display:none}
+@media(max-width:800px),(orientation:portrait){
+  #grid{grid-template-columns:1fr;grid-template-rows:1fr 1fr;padding-top:52px}
+  #side{position:fixed;z-index:20;top:0;bottom:0;left:0;width:min(300px,86vw);transform:translateX(-100%);transition:transform .2s;padding-top:calc(16px + env(safe-area-inset-top))}
+  body.open #side{transform:none}
+  body.open #scrim{display:block;position:fixed;inset:0;background:#0009;z-index:10}
+  #menu{display:block;position:fixed;z-index:5;top:calc(8px + env(safe-area-inset-top));left:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 13px}
+}
+@media(prefers-reduced-motion:reduce){#side{transition:none}}
+</style></head>
+<body>
+<button id="menu" aria-label="Open menu" aria-expanded="false">☰ Menu</button>
+<div id="scrim"></div>
+
+<aside id="side" aria-label="Menu">
+  <h1>Live Duo</h1>
+
+  <section class="lv" data-n="1">
+    <h2>Live 1</h2>
+    <div class="row"><input type="text" placeholder="Paste YouTube link" inputmode="url" autocomplete="off" aria-label="Live 1 link"><button class="btn go">Play</button></div>
+    <label class="chk"><input type="checkbox" class="sv" checked> Show video</label>
+  </section>
+
+  <section class="lv" data-n="2">
+    <h2>Live 2</h2>
+    <div class="row"><input type="text" placeholder="Paste YouTube link" inputmode="url" autocomplete="off" aria-label="Live 2 link"><button class="btn go">Play</button></div>
+    <label class="chk"><input type="checkbox" class="sv" checked> Show video</label>
+  </section>
+
+  <section class="keybox">
+    <h2>Counts</h2>
+    <p>Watching and likes need a free YouTube API key. Without one they stay at –. Video and chat work either way.</p>
+    <div class="row"><input type="password" id="key" placeholder="API key (optional)" autocomplete="off" spellcheck="false" aria-label="YouTube API key"><button class="btn ghost" id="savekey">Save</button></div>
+    <div class="msg" id="msg"></div>
+  </section>
+</aside>
+
+<main id="grid">
+  <section class="pane" data-n="1"><div class="hd"><strong>Live 1</strong><span class="st">Watching <b class="w">–</b></span><span class="st">Likes <b class="l">–</b></span><em class="ttl"></em></div><div class="vid"></div><div class="chat"></div></section>
+  <section class="pane" data-n="2"><div class="hd"><strong>Live 2</strong><span class="st">Watching <b class="w">–</b></span><span class="st">Likes <b class="l">–</b></span><em class="ttl"></em></div><div class="vid"></div><div class="chat"></div></section>
+</main>
+
+<script>
+const $=s=>document.querySelector(s),API='https://www.googleapis.com/youtube/v3/';
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}},set(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
+const host=location.hostname;
+const fmt=n=>n==null||n===''?'–':Number(n).toLocaleString();
+let key=ls.get('ytkey')||'';
+
+function parseId(s){
+  s=s.trim();if(/^[\w-]{11}$/.test(s))return s;
+  try{const u=new URL(s);
+    if(u.hostname==='youtu.be'||u.hostname==='www.youtu.be')return u.pathname.split('/').filter(Boolean)[0]?.slice(0,11)||null;
+    const v=u.searchParams.get('v');if(v&&/^[\w-]{11}$/.test(v.slice(0,11)))return v.slice(0,11);
+    const m=u.pathname.match(/\/(?:live|shorts|embed|v)\/([\w-]{11})/);if(m)return m[1];
+  }catch(e){}return null;
+}
+
+/* drawer (phones) */
+const setOpen=o=>{document.body.classList.toggle('open',o);$('#menu').setAttribute('aria-expanded',o)};
+$('#menu').onclick=()=>setOpen(true);$('#scrim').onclick=()=>setOpen(false);
+document.onkeydown=e=>{if(e.key==='Escape')setOpen(false)};
+
+const lives=[1,2].map(n=>{
+  const side=document.querySelector('.lv[data-n="'+n+'"]'),pane=document.querySelector('.pane[data-n="'+n+'"]');
+  const L={n,id:ls.get('v'+n)||null,side,pane,
+    inp:side.querySelector('input[type=text]'),sv:side.querySelector('.sv'),
+    vid:pane.querySelector('.vid'),chat:pane.querySelector('.chat'),ttl:pane.querySelector('.ttl'),
+    w:pane.querySelector('.w'),l:pane.querySelector('.l')};
+  const vidHtml=id=>'<iframe loading="lazy" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/embed/'+id+'?autoplay=1&mute=1&playsinline=1&rel=0" allow="autoplay; encrypted-media; picture-in-picture; fullscreen" allowfullscreen title="Live '+n+' video"></iframe>';
+  const chatHtml=id=>'<iframe loading="lazy" referrerpolicy="strict-origin-when-cross-origin" src="https://www.youtube.com/live_chat?v='+id+'&embed_domain='+encodeURIComponent(host)+'&dark_theme=1" title="Live '+n+' chat"></iframe>';
+  L.showVideo=show=>{
+    pane.classList.toggle('novid',!show);L.sv.checked=show;ls.set('h'+n,show?'1':'0');
+    L.vid.innerHTML=show&&L.id?vidHtml(L.id):'';           // hiding stops playback
+  };
+  L.load=id=>{
+    if(!id){L.inp.value='';L.inp.placeholder='That is not a YouTube link';return false}
+    L.id=id;ls.set('v'+n,id);L.inp.value='';
+    L.chat.innerHTML=chatHtml(id);
+    if(!pane.classList.contains('novid'))L.vid.innerHTML=vidHtml(id);
+    L.w.textContent=L.l.textContent='–';L.ttl.textContent='';
+    stats();return true;
+  };
+  side.querySelector('.go').onclick=()=>{if(L.load(parseId(L.inp.value)))setOpen(false)};
+  L.inp.onkeydown=e=>{if(e.key==='Enter')side.querySelector('.go').click()};
+  L.sv.onchange=()=>L.showVideo(L.sv.checked);
+  if(ls.get('h'+n)==='0'){pane.classList.add('novid');L.sv.checked=false}
+  if(L.id){L.load(L.id)}else{L.chat.innerHTML='<div class="empty">Open the menu and paste a link for Live '+n+'</div>'}
+  return L;
+});
+if(!lives.some(l=>l.id))setOpen(true);
+
+/* counts (optional key) */
+async function stats(){
+  const msg=$('#msg');if(!key)return;
+  const ids=[...new Set(lives.map(l=>l.id).filter(Boolean))];if(!ids.length)return;
+  try{
+    const r=await fetch(API+'videos?part=snippet,statistics,liveStreamingDetails&id='+ids.join(',')+'&key='+encodeURIComponent(key));
+    const j=await r.json();if(!r.ok)throw new Error(j.error?.message||r.status);
+    lives.forEach(l=>{const x=(j.items||[]).find(i=>i.id===l.id);
+      l.w.textContent=fmt(x?.liveStreamingDetails?.concurrentViewers);
+      l.l.textContent=fmt(x?.statistics?.likeCount);
+      l.ttl.textContent=x?x.snippet.title:''});
+    msg.textContent='';
+  }catch(e){msg.textContent='Counts error: '+e.message}
+}
+$('#key').value=key;
+$('#savekey').onclick=()=>{key=$('#key').value.trim();ls.set('ytkey',key);$('#msg').textContent=key?'Saved.':'Key removed.';if(key)stats();else lives.forEach(l=>l.w.textContent=l.l.textContent='–')};
+setInterval(stats,20000);stats();
+</script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body></html>
